@@ -69,46 +69,47 @@ class TwoLayerNet(object):
 
     # Compute the forward pass
     scores = None
-    #############################################################################
-    # TODO: Perform the forward pass, computing the class scores for the input. #
     # Store the result in the scores variable, which should be an array of      #
     # shape (N, C).                                                             #
     #############################################################################
-    pass
-    #############################################################################
-    #                              END OF YOUR CODE                             #
-    #############################################################################
-    
+    # Our architecture says to use ReLu so ReLu we will use
+    # f(x) max(0, x)
+    f = lambda x: np.maximum(0, x)
+    X2 = f(np.dot(X, W1) + b1)
+    scores = np.dot(X2, W2) + b2
     # If the targets are not given then jump out, we're done
     if y is None:
       return scores
 
     # Compute the loss
     loss = None
-    #############################################################################
-    # TODO: Finish the forward pass, and compute the loss. This should include  #
     # both the data loss and L2 regularization for W1 and W2. Store the result  #
     # in the variable loss, which should be a scalar. Use the Softmax           #
     # classifier loss. So that your results match ours, multiply the            #
     # regularization loss by 0.5                                                #
-    #############################################################################
-    pass
-    #############################################################################
-    #                              END OF YOUR CODE                             #
-    #############################################################################
-
+    #import pdb; pdb.set_trace()
+    # let's use the softmax loss
+    reg_W1 = np.sum(0.5 * reg * W1**2)
+    reg_W2 = np.sum(0.5 * reg * W2**2)
+    # spread of probabilities
+    probabilities = np.e**scores / np.sum(np.e**scores, axis=1, keepdims=1)
+    loss = 1.0/N * np.sum(- np.log(probabilities[range(N), y])) + reg_W1 + reg_W2
     # Backward pass: compute gradients
     grads = {}
-    #############################################################################
-    # TODO: Compute the backward pass, computing the derivatives of the weights #
-    # and biases. Store the results in the grads dictionary. For example,       #
     # grads['W1'] should store the gradient on W1, and be a matrix of same size #
-    #############################################################################
-    pass
-    #############################################################################
-    #                              END OF YOUR CODE                             #
-    #############################################################################
-
+    #1/n * np.sum(X * (softmax(y) - y))
+    dscores = probabilities
+    # Calculate the penalty of the incorrect class
+    dscores[range(N), y] -= 1
+    dscores = dscores / N
+    #import pdb; pdb.set_trace()
+    grads['W2'] = np.dot(X2.T, dscores) + reg * W2
+    grads['b2'] = np.sum(dscores, axis=0, keepdims=True)
+    hidden_derivative = np.dot(dscores, W2.T)
+    # apply ReLU on the backpropagation
+    hidden_derivative[X2 <= 0] = 0
+    grads['W1'] = np.dot(X.T, hidden_derivative) + reg * W1
+    grads['b1'] = np.sum(hidden_derivative, axis=0, keepdims=True)
     return loss, grads
 
   def train(self, X, y, X_val, y_val,
@@ -132,6 +133,12 @@ class TwoLayerNet(object):
     - batch_size: Number of training examples to use per step.
     - verbose: boolean; if true print progress during optimization.
     """
+    if verbose:
+        print "Called with {learning_rate}, {learning_rate_decay}, {reg}, \
+{num_iters}, {batch_size}".format(learning_rate=learning_rate, \
+learning_rate_decay=learning_rate_decay, reg=reg, num_iters=num_iters, \
+batch_size=batch_size)
+
     num_train = X.shape[0]
     iterations_per_epoch = max(num_train / batch_size, 1)
 
@@ -148,10 +155,10 @@ class TwoLayerNet(object):
       # TODO: Create a random minibatch of training data and labels, storing  #
       # them in X_batch and y_batch respectively.                             #
       #########################################################################
-      pass
-      #########################################################################
-      #                             END OF YOUR CODE                          #
-      #########################################################################
+      ixes = np.random.choice(range(num_train), iterations_per_epoch, False)
+      X_batch = X[ixes]
+      y_batch = y[ixes]
+      #print ixes, X_batch, y_batch
 
       # Compute loss and gradients using the current minibatch
       loss, grads = self.loss(X_batch, y=y_batch, reg=reg)
@@ -163,10 +170,10 @@ class TwoLayerNet(object):
       # using stochastic gradient descent. You'll need to use the gradients   #
       # stored in the grads dictionary defined above.                         #
       #########################################################################
-      pass
-      #########################################################################
-      #                             END OF YOUR CODE                          #
-      #########################################################################
+      self.params['W1'] += - learning_rate * grads['W1']
+      self.params['W2'] += - learning_rate * grads['W2']
+      self.params['b1'] += - learning_rate * grads['b1'][0]
+      self.params['b2'] += - learning_rate * grads['b2'][0]
 
       if verbose and it % 100 == 0:
         print 'iteration %d / %d: loss %f' % (it, num_iters, loss)
@@ -204,15 +211,23 @@ class TwoLayerNet(object):
       to have class c, where 0 <= c < C.
     """
     y_pred = None
+    W1, b1 = self.params['W1'], self.params['b1']
+    W2, b2 = self.params['W2'], self.params['b2']
+    N, D = X.shape
 
-    ###########################################################################
-    # TODO: Implement this function; it should be VERY simple!                #
-    ###########################################################################
-    pass
-    ###########################################################################
-    #                              END OF YOUR CODE                           #
-    ###########################################################################
+    # Compute the forward pass to get the scores on the dataset with the
+    # current weights
+    scores = None
+    # Store the result in the scores variable, which should be an array of      #
+    # shape (N, C).                                                             #
+    #############################################################################
+    # Our architecture says to use ReLu so ReLu we will use
+    # f(x) max(0, x)
+    f = lambda x: np.maximum(0, x)
+    X2 = f(np.dot(X, W1) + b1)
+    scores = np.dot(X2, W2) + b2
+    # need the class from the scores[i][Classes] that corresponds to the highest
+    # score from each sample i given the current weights
+    y_pred = np.argmax(scores, axis=1)
 
     return y_pred
-
-
