@@ -75,7 +75,10 @@ class TwoLayerNet(object):
     # Our architecture says to use ReLu so ReLu we will use
     # f(x) max(0, x)
     f = lambda x: np.maximum(0, x)
+    # Dropout like it's hot, 20% of the input and 50% of the hidden layer
+    X = self.dropout(X, 20)
     X2 = f(np.dot(X, W1) + b1)
+    X2 = self.dropout(X2, 50)
     scores = np.dot(X2, W2) + b2
     # If the targets are not given then jump out, we're done
     if y is None:
@@ -111,6 +114,20 @@ class TwoLayerNet(object):
     grads['W1'] = np.dot(X.T, hidden_derivative) + reg * W1
     grads['b1'] = np.sum(hidden_derivative, axis=0, keepdims=True)
     return loss, grads
+
+  def dropout(self, layer, percent):
+    """
+    Implement drop out by 0ing a randomly selected perecnt of the layer
+
+    Returns: layer with percent nodes set to 0
+    """
+    layer_dims = layer.shape
+    layer = layer.reshape(layer_dims[0]*layer_dims[1])
+    layer[np.random.choice(np.arange(layer.shape[0]), layer.shape[0] *
+(percent/100), False )] = 0
+    layer = layer.reshape(layer_dims[0], layer_dims[1])
+    return layer
+
 
   def train(self, X, y, X_val, y_val,
             learning_rate=1e-3, learning_rate_decay=0.95,
