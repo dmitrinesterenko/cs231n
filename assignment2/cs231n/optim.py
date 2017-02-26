@@ -39,6 +39,10 @@ def sgd(weight, dw, config=None):
   """
   if config is None: config = {}
   config.setdefault('learning_rate', 1e-2)
+  # TODO: What is this ridiculous edge case that I have in my calculations?
+  # this is only a problem when dw.shape[0] is 1
+  if dw.shape[0] == 1:
+    dw = dw.reshape(dw.shape[1])
   weight -= config['learning_rate'] * dw
   return weight, config
 
